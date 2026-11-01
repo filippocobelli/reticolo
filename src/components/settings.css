@@ -1,0 +1,19 @@
+.st-section { margin-bottom: 18px; }
+.st-section h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+.st-grid { display: grid; grid-template-columns: 170px 1fr; gap: 10px 14px; align-items: center; }
+.st-grid label { font-size: 12.5px; opacity: .8; }
+.st-grid input[type="text"], .st-grid input[type="password"], .st-grid input[type="number"], .st-grid select { width: 100%; box-sizing: border-box; }
+.st-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.st-inline > input { flex: 1; min-width: 160px; }
+.st-msg { margin-top: 8px; font-size: 12.5px; padding: 6px 10px; border-radius: 6px; }
+.st-msg.ok { background: rgba(60, 180, 110, .15); color: #6fd39b; }
+.st-msg.err { background: rgba(220, 70, 70, .15); color: #f08a8a; }
+.st-progress { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin: 8px 0 4px; }
+.st-progress > div { height: 100%; background: var(--accent, #4f8cff); transition: width .2s; }
+.st-privacy { font-size: 12px; line-height: 1.45; padding: 10px 12px; border-radius: 8px; background: rgba(79, 140, 255, .08); border: 1px solid rgba(79, 140, 255, .25); margin-bottom: 16px; }
+.st-slicer { display: flex; align-items: center; gap: 10px; }
+.st-slicer .st-name { flex: 1; min-width: 0; }
+.st-slicer .st-path { font-size: 11.5px; opacity: .55; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; flex: none; }
+.st-dot.on { background: #4cc38a; }
+.st-errors { font-size: 11.5px; max-height: 120px; overflow: auto; opacity: .8; margin-top: 6px; }

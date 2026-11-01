@@ -1,0 +1,128 @@
+{
+  "name": "reticolo",
+  "productName": "Reticolo",
+  "version": "0.1.0",
+  "description": "Gestore locale di librerie 3D per stampa 3D, laser e CNC",
+  "main": "electron/main.js",
+  "author": "Filippo Cobelli",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite build && electron .",
+    "build:ui": "vite build",
+    "start": "electron .",
+    "dist": "vite build && electron-builder",
+    "dist:mac": "vite build && electron-builder --mac",
+    "dist:win": "vite build && electron-builder --win",
+    "dist:linux": "vite build && electron-builder --linux",
+    "test": "node --no-warnings test/ai.test.js && node --no-warnings test/slicers.test.js && node --no-warnings test/threemf.test.js && node --no-warnings test/archives.test.js && node --no-warnings test/extract.test.js && node --no-warnings test/viewer-parsers.test.mjs",
+    "test:e2e": "vite build && node test/make-fixtures.js /tmp/reticolo-lib && RETICOLO_TEST=1 RETICOLO_SHOW=1 RETICOLO_SOFTWARE_GL=1 RETICOLO_USERDATA=/tmp/reticolo-ud RETICOLO_LIB=/tmp/reticolo-lib RETICOLO_TEST_SCRIPT=$PWD/test/e2e.js electron --no-sandbox .",
+    "postinstall": "node -e \"try{require('fs').readdirSync('node_modules/7zip-bin',{recursive:true}).filter(f=>/7za$/.test(f)).forEach(f=>require('fs').chmodSync('node_modules/7zip-bin/'+f,0o755))}catch(e){}\""
+  },
+  "dependencies": {
+    "7zip-bin": "^5.2.0",
+    "chokidar": "^6.0.0",
+    "fflate": "^0.8.3",
+    "node-unrar-js": "^2.0.2",
+    "tar": "^7.5.22"
+  },
+  "devDependencies": {
+    "@expo-google-fonts/bebas-neue": "^0.4.1",
+    "@expo-google-fonts/pacifico": "^0.4.1",
+    "@expo-google-fonts/roboto": "^0.4.3",
+    "@expo-google-fonts/roboto-mono": "^0.4.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "dxf-parser": "^1.1.2",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
+    "occt-import-js": "^0.0.23",
+    "opentype.js": "^2.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "rhino3dm": "^8.35.0",
+    "three": "^0.187.0",
+    "vite": "^8.3.5"
+  },
+  "build": {
+    "appId": "eu.cobelli.reticolo",
+    "productName": "Reticolo",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**",
+      "dist/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/7zip-bin/**"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "minimumSystemVersion": "12.0",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Graphics",
+      "icon": "build/icon.png"
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "fileAssociations": [
+      {
+        "ext": [
+          "stl",
+          "3mf",
+          "obj",
+          "step",
+          "stp",
+          "gcode"
+        ],
+        "name": "Modello 3D",
+        "role": "Viewer"
+      }
+    ]
+  }
+}
