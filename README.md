@@ -1,6 +1,6 @@
 # Reticolo
 
-Gestore locale di librerie 3D per Mac, Windows e Linux. Indicizza cartelle, dischi e NAS senza caricare, spostare o rinominare i file.
+Gestore locale di librerie 3D per Mac (Apple Silicon) e Windows (x64). Indicizza cartelle, dischi e NAS senza caricare, spostare o rinominare i file.
 
 ## Funzioni
 
@@ -24,8 +24,10 @@ Gestore locale di librerie 3D per Mac, Windows e Linux. Indicizza cartelle, disc
    git remote add origin https://github.com/<utente>/reticolo.git
    git push -u origin main
    ```
-2. Su GitHub apri **Actions → Build**: al termine trovi gli artefatti `Reticolo-macOS` (.dmg per Apple Silicon e Intel), `Reticolo-Windows` (installer .exe e versione portable) e `Reticolo-Linux` (AppImage).
-3. Per una release: `git tag v0.1.0 && git push --tags` crea una bozza di release con tutti i file.
+2. Su GitHub apri **Actions → Build → Run workflow**. Al termine trovi `Reticolo-Mac-AppleSilicon` (.dmg) e `Reticolo-Windows-x64` (installer .exe), scaricabili per 3 giorni.
+3. Per una release permanente: `git tag v0.1.0 && git push --tags` crea una bozza di release con i due installer.
+
+Le build partono solo a richiesta o con un tag, per non consumare i minuti gratuiti di GitHub (repository privato).
 
 ### Primo avvio su macOS
 
@@ -46,8 +48,8 @@ Servono Node.js 22 o successivo.
 ```bash
 npm install
 npm run dev          # compila l'interfaccia e avvia l'app
-npm run dist:mac     # su un Mac → release/*.dmg
-npm run dist:win     # su Windows → release/*.exe
+npm run dist:mac     # su un Mac → release/*.dmg (Apple Silicon)
+npm run dist:win     # su Windows → release/*.exe (x64)
 npm test             # test dei moduli
 ```
 
