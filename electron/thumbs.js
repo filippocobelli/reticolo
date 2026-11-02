@@ -103,7 +103,7 @@ async function loop(ctx) {
   const { db } = ctx;
   try {
     for (;;) {
-      const batch = db.all(`SELECT * FROM items WHERE thumb=0 AND missing=0 ORDER BY
+      const batch = db.all(`SELECT * FROM items WHERE thumb=0 AND missing=0 ORDER BY hidden,
         CASE kind WHEN 'model' THEN 0 WHEN 'mesh' THEN 1 WHEN 'gcode' THEN 2 WHEN 'laser' THEN 3 WHEN 'cad' THEN 4 WHEN 'image' THEN 5 WHEN 'video' THEN 6 WHEN 'archive' THEN 8 ELSE 7 END, id LIMIT 25`);
       if (!batch.length) break;
       for (const it of batch) {

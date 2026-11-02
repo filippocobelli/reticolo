@@ -66,6 +66,7 @@ export default function Sidebar({ view, go, facets, sources, tags, collections, 
           <Item icon="🕘" label="Aggiunti di recente" active={is('library', 'key', 'recent')} onClick={() => lib({ sort: 'added', order: 'desc' }, 'Aggiunti di recente', 'recent')} />
           <Item icon="◌" label="Senza raccolta" count={facets.uncollected} active={is('library', 'key', 'uncol')} onClick={() => lib({ uncollected: true }, 'Senza raccolta', 'uncol')} />
           <Item icon="#" label="Senza tag" active={is('library', 'key', 'untag')} onClick={() => lib({ untagged: true }, 'Senza tag', 'untag')} />
+          {facets.hidden > 0 && <Item icon="◍" label="Nascosti" count={facets.hidden} active={is('library', 'key', 'hidden')} onClick={() => lib({ hidden: true }, 'Elementi nascosti', 'hidden')} />}
           {facets.missing > 0 && <Item icon="⚠" label="Non più trovati" count={facets.missing} active={is('library', 'key', 'missing')} onClick={() => lib({ missing: true }, 'Non più trovati', 'missing')} />}
         </div>
 

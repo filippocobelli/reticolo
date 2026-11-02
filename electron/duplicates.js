@@ -18,16 +18,16 @@ function normName(n) {
 
 function compute(db) {
   const exact = [];
-  for (const g of db.all(`SELECT qhash FROM items WHERE missing=0 AND kind IN (${kindsSql}) AND qhash IS NOT NULL GROUP BY qhash HAVING COUNT(*)>1`)) {
-    exact.push(db.all(`SELECT ${COLS} FROM items WHERE qhash=? AND missing=0 AND kind IN (${kindsSql}) ORDER BY path`, g.qhash).map(parse));
+  for (const g of db.all(`SELECT qhash FROM items WHERE missing=0 AND hidden=0 AND kind IN (${kindsSql}) AND qhash IS NOT NULL GROUP BY qhash HAVING COUNT(*)>1`)) {
+    exact.push(db.all(`SELECT ${COLS} FROM items WHERE qhash=? AND missing=0 AND hidden=0 AND kind IN (${kindsSql}) ORDER BY path`, g.qhash).map(parse));
   }
   const geometry = [];
-  for (const g of db.all(`SELECT geo_hash FROM items WHERE missing=0 AND geo_hash IS NOT NULL GROUP BY geo_hash HAVING COUNT(DISTINCT qhash)>1`)) {
-    geometry.push(db.all(`SELECT ${COLS} FROM items WHERE geo_hash=? AND missing=0 ORDER BY path`, g.geo_hash).map(parse));
+  for (const g of db.all(`SELECT geo_hash FROM items WHERE missing=0 AND hidden=0 AND geo_hash IS NOT NULL GROUP BY geo_hash HAVING COUNT(DISTINCT qhash)>1`)) {
+    geometry.push(db.all(`SELECT ${COLS} FROM items WHERE geo_hash=? AND missing=0 AND hidden=0 ORDER BY path`, g.geo_hash).map(parse));
   }
   // probabili: stesso nome normalizzato o stessi triangoli+dimensioni, ma non gia' identici
   const reviews = new Map(db.all('SELECT a, b, status FROM dup_reviews').map(r => [`${r.a}-${r.b}`, r.status]));
-  const rows = db.all(`SELECT ${COLS} FROM items WHERE missing=0 AND kind IN ('model','mesh')`).map(parse);
+  const rows = db.all(`SELECT ${COLS} FROM items WHERE missing=0 AND hidden=0 AND kind IN ('model','mesh')`).map(parse);
   const pairs = []; const seenPair = new Set(); const confirmed = [];
   const addPair = (a, b, reason) => {
     if (a.qhash === b.qhash || (a.geo_hash && a.geo_hash === b.geo_hash)) return;

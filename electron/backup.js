@@ -14,11 +14,11 @@ function build(ctx) {
   const { db } = ctx;
   const items = [];
   const files = {};
-  const rows = db.all(`SELECT i.id, i.qhash, i.path, i.note, i.cover, i.ai_desc, i.ai_tags FROM items i WHERE i.note IS NOT NULL OR i.cover IS NOT NULL OR i.ai_desc IS NOT NULL
+  const rows = db.all(`SELECT i.id, i.qhash, i.path, i.note, i.cover, i.ai_desc, i.ai_tags, i.hidden FROM items i WHERE i.hidden=1 OR i.note IS NOT NULL OR i.cover IS NOT NULL OR i.ai_desc IS NOT NULL
     OR EXISTS (SELECT 1 FROM item_tags x WHERE x.item_id=i.id) OR EXISTS (SELECT 1 FROM collection_items c WHERE c.item_id=i.id) OR EXISTS (SELECT 1 FROM queue q WHERE q.item_id=i.id)`);
   for (const r of rows) {
     const rec = {
-      qhash: r.qhash, path: r.path, note: r.note || undefined, ai_desc: r.ai_desc || undefined, ai_tags: r.ai_tags ? JSON.parse(r.ai_tags) : undefined,
+      qhash: r.qhash, path: r.path, note: r.note || undefined, hidden: r.hidden ? 1 : undefined, ai_desc: r.ai_desc || undefined, ai_tags: r.ai_tags ? JSON.parse(r.ai_tags) : undefined,
       tags: db.all('SELECT t.name FROM tags t JOIN item_tags x ON x.tag_id=t.id WHERE x.item_id=?', r.id).map(t => t.name),
       collections: db.all('SELECT c.name FROM collections c JOIN collection_items x ON x.collection_id=c.id WHERE x.item_id=?', r.id).map(c => c.name),
     };
@@ -54,6 +54,7 @@ function restore(ctx, file) {
       if (!it) { unmatched++; continue; }
       matched++;
       if (rec.note) db.run('UPDATE items SET note=? WHERE id=?', rec.note, it.id);
+      if (rec.hidden) db.run('UPDATE items SET hidden=1 WHERE id=? OR archive_id=?', it.id, it.id);
       if (rec.ai_desc) db.run('UPDATE items SET ai_desc=?, ai_tags=? WHERE id=?', rec.ai_desc, JSON.stringify(rec.ai_tags || []), it.id);
       for (const t of rec.tags || []) db.run('INSERT OR IGNORE INTO item_tags(item_id,tag_id) VALUES(?,?)', it.id, ctx.tagId(t));
       for (const c of rec.collections || []) db.run('INSERT OR IGNORE INTO collection_items(collection_id,item_id) VALUES(?,?)', colId(c), it.id);

@@ -12,7 +12,7 @@ module.exports = async function (ctx, app) {
   const win = ctx.getMainWindow();
   await new Promise(r => win.webContents.isLoading() ? win.webContents.once('did-finish-load', r) : r());
   const js = (code) => win.webContents.executeJavaScript(code);
-  const inv = (ch, ...a) => js(`window.rtc.invoke(${JSON.stringify(ch)}, ...${JSON.stringify(a)})`);
+  const inv = (ch, ...a) => js(`window.rtc.invoke(${JSON.stringify(ch)}, ...${JSON.stringify(a)}).catch(e => ({ __err: String(e.message) }))`).then(r => { if (r && r.__err) throw new Error(ch + ': ' + r.__err); return r; });
   const shot = async (name) => { await sleep(700); const img = await win.webContents.capturePage(); fs.writeFileSync(path.join(SHOTS, name + '.png'), img.toPNG()); };
   const click = (text, sel = '.nav-item, .btn, .tab, .card, span') => js(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find(e => (e.querySelector('.label') ? e.querySelector('.label').textContent : e.textContent).trim().startsWith(${JSON.stringify(text)})); if (!el) return false; el.click(); return true; })()`);
   const dbl = (text) => js(`(() => { const el = [...document.querySelectorAll('.card')].find(e => e.textContent.includes(${JSON.stringify(text)})); if (!el) return false; el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); return true; })()`);
@@ -67,6 +67,23 @@ module.exports = async function (ctx, app) {
     const unc = await inv('items:query', { uncollected: true });
     ok(!unc.items.some(i => i.id === cube), 'vista senza raccolta');
 
+    // nascondi: archivio e contenuto, persistenza dopo nuova scansione, ripristino
+    const zipId = by('pack_miniature.zip').id;
+    await inv('items:setHidden', [zipId], true);
+    const h1 = await inv('items:query', {});
+    ok(!h1.items.some(i => i.id === zipId || i.archive_id === zipId), 'archivio e contenuto nascosti dalla libreria');
+    const hv = await inv('items:query', { hidden: true });
+    ok(hv.items.some(i => i.id === zipId) && hv.items.some(i => i.name === 'torre.stl'), 'vista Nascosti', hv.items.map(i => i.name));
+    await inv('scan:rescan', 1); await sleep(300); await scanner.waitIdle();
+    ok(db.get('SELECT COUNT(*) n FROM items WHERE archive_id=? AND hidden=0', zipId).n === 0 && db.get('SELECT hidden FROM items WHERE id=?', zipId).hidden === 1, 'nascosti anche dopo nuova scansione');
+    const fz = await inv('items:folder', { sourceId: 1, dir: 'Pacchetti' });
+    ok(!fz.items.some(i => i.id === zipId), 'archivio nascosto non compare nelle cartelle');
+    await inv('items:setHidden', [zipId], false);
+    ok((await inv('items:query', {})).items.some(i => i.name === 'torre.stl'), 'mostra di nuovo');
+    const nd = await inv('items:setHiddenDir', { sourceId: 1, dir: 'Laser' }, true);
+    ok(nd === 2 && !(await inv('items:query', {})).items.some(i => i.name === 'mandala.dxf'), 'nascondi cartella intera', nd);
+    await inv('items:setHiddenDir', { sourceId: 1, dir: 'Laser' }, false);
+
     // coda
     await inv('queue:add', { itemId: by('anello.gcode').id });
     const q = await inv('queue:list');
@@ -91,8 +108,10 @@ module.exports = async function (ctx, app) {
 
     // ---------- screenshot interfaccia ----------
     await js('location.reload()'); await sleep(1500);
+    await inv('items:setHidden', [by('cubo-v2.stl').id], true); await js('location.reload()'); await sleep(1500);
     await click('Tutti i modelli'); await shot('01-libreria');
-    await js(`[...document.querySelectorAll('.card')].find(e => e.textContent.includes('portachiavi')).click()`); await shot('02-dettaglio-3mf');
+    await click('Nascosti'); await sleep(600); await shot('01b-nascosti'); await inv('items:setHidden', [by('cubo-v2.stl').id], false); await click('Tutti i modelli'); await sleep(800);
+    const found = await js(`(() => { const c = [...document.querySelectorAll('.card')]; const e = c.find(e => e.textContent.includes('portachiavi')); if (e) { e.click(); return 'ok'; } return document.querySelector('h1') && document.querySelector('h1').textContent + ' | ' + c.map(x => x.textContent).join(','); })()`); ok(found === 'ok', 'selezione card', found); await shot('02-dettaglio-3mf');
     await dbl('portachiavi'); await sleep(2500); await shot('03-viewer-3mf');
     await click('Gancio', '.btn'); await sleep(1500); await shot('04-viewer-3mf-piatto2');
     await click('← Indietro'); await sleep(300);

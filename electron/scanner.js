@@ -120,6 +120,7 @@ async function indexArchive(ctx, src, archId, file, ext, dir, name, qh, mtime, s
     return;
   }
   const keep = new Set();
+  const archHidden = (db.get('SELECT hidden FROM items WHERE id=?', archId) || {}).hidden ? 1 : 0;
   db.tx(() => {
     for (const en of entries) {
       const inner = en.name.replace(/\\/g, '/');
@@ -139,8 +140,8 @@ async function indexArchive(ctx, src, archId, file, ext, dir, name, qh, mtime, s
         if (ex.qhash !== eh) db.run('UPDATE items SET qhash=?, size=?, mtime=?, thumb=0, geo_hash=NULL, missing=0 WHERE id=?', eh, en.size, mtime, id);
         else db.run('UPDATE items SET missing=0, archive_id=? WHERE id=?', archId, id);
       } else {
-        id = Number(db.run('INSERT INTO items(source_id,path,dir,name,ext,kind,size,mtime,qhash,thumb,archive_id,added_at) VALUES(?,?,?,?,?,?,?,?,?,0,?,?)',
-          src.id, p, d, base, eext, f.kind, en.size || 0, mtime, eh, archId, Date.now()).lastInsertRowid);
+        id = Number(db.run('INSERT INTO items(source_id,path,dir,name,ext,kind,size,mtime,qhash,thumb,archive_id,added_at,hidden) VALUES(?,?,?,?,?,?,?,?,?,0,?,?,?)',
+          src.id, p, d, base, eext, f.kind, en.size || 0, mtime, eh, archId, Date.now(), archHidden).lastInsertRowid);
       }
       db.refreshSearch(id);
       keep.add(id); seen && seen.add(id);

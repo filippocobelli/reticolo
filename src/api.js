@@ -19,6 +19,8 @@ export const api = {
     folder: inv('items:folder'),            // ({sourceId, dir, archiveId}) -> {folders:[{name,dir,count}], items:[...]}
     companions: inv('items:companions'),    // (id) -> [item]
     setNote: inv('items:setNote'),          // (id, text)
+    setHidden: inv('items:setHidden'),
+    setHiddenDir: inv('items:setHiddenDir'), // ({sourceId, dir}, bool) nasconde tutto il contenuto di una cartella
     setCover: inv('items:setCover'),        // (id, dataUrl|null)
     reveal: inv('items:reveal'),            // (id) mostra in Finder/Esplora risorse
     openDefault: inv('items:openDefault'),  // (id) apre con l'app di sistema

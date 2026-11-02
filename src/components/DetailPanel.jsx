@@ -97,6 +97,7 @@ export default function DetailPanel({ itemId, selection, onView, go, slicers, al
               <button className="btn" onClick={() => api.queue.add({ itemIds: ids }).then(() => ui.toast('Aggiunti alla coda', 'ok'))}>＋ Coda di stampa</button>
               <button className="btn" disabled={!aiConfigured} title={aiConfigured ? '' : 'Configura l\'IA nelle impostazioni'} onClick={() => api.ai.tag(ids).then(() => ui.toast('Analisi IA avviata'))}>✦ Tag con IA</button>
               <button className="btn" onClick={() => api.thumbs.regenerate(ids)}>↻ Miniature</button>
+              <button className="btn" title="Tasto H" onClick={() => api.items.setHidden(ids, true).then(() => ui.toast(`${ids.length} elementi nascosti`, 'ok'))}>◌ Nascondi</button>
             </div>
           </div>
         </section>
@@ -129,6 +130,7 @@ export default function DetailPanel({ itemId, selection, onView, go, slicers, al
           {item.format.experimental && <span className="badge beta">sperimentale</span>}
           {item.format.searchOnly && <span className="badge">solo ricerca</span>}
           {item.missing ? <span className="badge warn">file non trovato</span> : null}
+          {item.hidden ? <span className="badge">nascosto</span> : null}
           {item.queue.length > 0 && <span className="badge ok">in coda</span>}
         </div>
         <div className="mono muted" style={{ overflowWrap: 'anywhere' }}>{item.archive ? `${item.archive.name} › ${item.path.split('::')[1]}` : item.path}</div>
@@ -148,6 +150,9 @@ export default function DetailPanel({ itemId, selection, onView, go, slicers, al
               { label: 'Imposta copertina da immagine…', onClick: setCover },
               ...companions.filter(c => c.kind === 'image').slice(0, 8).map(c => ({ label: `Copertina: ${c.name}`, onClick: async () => { const b = await (await fetch(`rtc://file/${c.id}`)).blob(); const fr = new FileReader(); fr.onload = () => api.items.setCover(item.id, fr.result); fr.readAsDataURL(b); } })),
               item.cover ? { label: 'Rimuovi copertina', onClick: () => api.items.setCover(item.id, null) } : null,
+              '-',
+              item.hidden ? { label: 'Mostra di nuovo nella libreria', onClick: () => api.items.setHidden([item.id], false).then(load) }
+                : { label: item.kind === 'archive' ? 'Nascondi archivio e contenuto' : 'Nascondi dalla libreria', onClick: () => api.items.setHidden([item.id], true).then(() => ui.toast('Nascosto. Lo ritrovi in "Nascosti".', 'ok')) },
             ])}>⋯ Altro</button>
           </div>
         </section>

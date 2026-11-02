@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { FORMATS, COMPANION_KINDS } = require('./formats');
 
-const CARD_COLS = 'i.id, i.name, i.ext, i.kind, i.size, i.mtime, i.thumb, i.dir, i.source_id, i.archive_id, i.tri_count, i.dims, i.missing, i.added_at, i.cover';
+const CARD_COLS = 'i.id, i.name, i.ext, i.kind, i.size, i.mtime, i.thumb, i.dir, i.source_id, i.archive_id, i.tri_count, i.dims, i.missing, i.hidden, i.added_at, i.cover';
 const LIBRARY_KINDS = ['model', 'mesh', 'gcode', 'laser', 'cad', 'archive'];
 
 function card(r) { return { ...r, dims: r.dims ? JSON.parse(r.dims) : null }; }
@@ -12,6 +12,7 @@ function card(r) { return { ...r, dims: r.dims ? JSON.parse(r.dims) : null }; }
 function buildWhere(f = {}) {
   const w = []; const p = [];
   if (!f.missing) w.push('i.missing=0'); else w.push('i.missing=1');
+  w.push(f.hidden ? 'i.hidden=1' : 'i.hidden=0');
   const kinds = f.kinds && f.kinds.length ? f.kinds : (f.exts && f.exts.length ? null : LIBRARY_KINDS);
   if (kinds) { w.push(`i.kind IN (${kinds.map(() => '?').join(',')})`); p.push(...kinds); }
   if (f.exts && f.exts.length) { w.push(`i.ext IN (${f.exts.map(() => '?').join(',')})`); p.push(...f.exts); }
@@ -39,7 +40,7 @@ function register(ctx) {
   const { db, handle } = ctx;
 
   // ---------- sorgenti ----------
-  handle('sources:list', () => db.all(`SELECT s.*, (SELECT COUNT(*) FROM items i WHERE i.source_id=s.id AND i.missing=0 AND i.kind IN ('model','mesh','gcode','laser','cad','archive')) AS count FROM sources s ORDER BY s.name COLLATE NOCASE`));
+  handle('sources:list', () => db.all(`SELECT s.*, (SELECT COUNT(*) FROM items i WHERE i.source_id=s.id AND i.missing=0 AND i.hidden=0 AND i.kind IN ('model','mesh','gcode','laser','cad','archive')) AS count FROM sources s ORDER BY s.name COLLATE NOCASE`));
   handle('sources:add', async (p) => {
     if (!p) {
       const r = await dialog.showOpenDialog(ctx.getMainWindow(), { title: 'Aggiungi una cartella alla libreria', properties: ['openDirectory', 'multiSelections'] });
@@ -93,17 +94,18 @@ function register(ctx) {
     return it;
   });
   handle('items:facets', () => {
-    const formats = db.all(`SELECT ext, COUNT(*) count FROM items WHERE missing=0 AND kind IN ('model','mesh','gcode','laser','cad','archive') GROUP BY ext ORDER BY count DESC`)
+    const formats = db.all(`SELECT ext, COUNT(*) count FROM items WHERE missing=0 AND hidden=0 AND kind IN ('model','mesh','gcode','laser','cad','archive') GROUP BY ext ORDER BY count DESC`)
       .map(r => ({ ...r, label: (FORMATS[r.ext] || {}).label || r.ext }));
-    const kinds = db.all('SELECT kind, COUNT(*) count FROM items WHERE missing=0 GROUP BY kind');
-    const total = db.get(`SELECT COUNT(*) n FROM items WHERE missing=0 AND kind IN ('model','mesh','gcode','laser','cad','archive')`).n;
-    const uncollected = db.get(`SELECT COUNT(*) n FROM items i WHERE missing=0 AND kind IN ('model','mesh','gcode','laser','cad','archive') AND NOT EXISTS (SELECT 1 FROM collection_items c WHERE c.item_id=i.id)`).n;
+    const kinds = db.all('SELECT kind, COUNT(*) count FROM items WHERE missing=0 AND hidden=0 GROUP BY kind');
+    const total = db.get(`SELECT COUNT(*) n FROM items WHERE missing=0 AND hidden=0 AND kind IN ('model','mesh','gcode','laser','cad','archive')`).n;
+    const uncollected = db.get(`SELECT COUNT(*) n FROM items i WHERE missing=0 AND hidden=0 AND kind IN ('model','mesh','gcode','laser','cad','archive') AND NOT EXISTS (SELECT 1 FROM collection_items c WHERE c.item_id=i.id)`).n;
     const missing = db.get('SELECT COUNT(*) n FROM items WHERE missing=1').n;
-    return { formats, kinds, total, uncollected, missing };
+    const hidden = db.get(`SELECT COUNT(*) n FROM items WHERE missing=0 AND hidden=1 AND kind IN ('model','mesh','gcode','laser','cad','archive')`).n;
+    return { formats, kinds, total, uncollected, missing, hidden };
   });
   handle('items:folder', ({ sourceId, dir = '' }) => {
     const prefix = dir ? dir + '/' : '';
-    const dirs = db.all(`SELECT dir, COUNT(*) n FROM items WHERE source_id=? AND missing=0 AND (dir LIKE ? OR ?='') GROUP BY dir`, sourceId, prefix + '%', dir);
+    const dirs = db.all(`SELECT dir, COUNT(*) n FROM items WHERE source_id=? AND missing=0 AND hidden=0 AND (dir LIKE ? OR ?='') GROUP BY dir`, sourceId, prefix + '%', dir);
     const sub = new Map();
     for (const d of dirs) {
       if (d.dir === dir) continue;
@@ -113,7 +115,7 @@ function register(ctx) {
       if (!seg) continue;
       sub.set(seg, (sub.get(seg) || 0) + d.n);
     }
-    const files = db.all(`SELECT ${CARD_COLS} FROM items i WHERE i.source_id=? AND i.dir=? AND i.missing=0 ORDER BY i.kind='archive' DESC, i.name COLLATE NOCASE`, sourceId, dir).map(card);
+    const files = db.all(`SELECT ${CARD_COLS} FROM items i WHERE i.source_id=? AND i.dir=? AND i.missing=0 AND i.hidden=0 ORDER BY i.kind='archive' DESC, i.name COLLATE NOCASE`, sourceId, dir).map(card);
     const archiveNames = new Set(files.filter(f => f.kind === 'archive').map(f => f.name));
     const folders = [...sub.entries()].filter(([n]) => !archiveNames.has(n)).map(([name, count]) => ({ name, dir: prefix + name, count }))
       .sort((a, b) => a.name.localeCompare(b.name, 'it', { numeric: true }));
@@ -125,7 +127,7 @@ function register(ctx) {
     const it = db.get('SELECT * FROM items WHERE id=?', id);
     if (!it) return [];
     const kinds = [...COMPANION_KINDS];
-    return db.all(`SELECT ${CARD_COLS} FROM items i WHERE i.source_id=? AND i.dir=? AND i.id<>? AND i.missing=0 AND i.kind IN (${kinds.map(() => '?').join(',')}) ORDER BY i.name LIMIT 60`, it.source_id, it.dir, id, ...kinds).map(card);
+    return db.all(`SELECT ${CARD_COLS} FROM items i WHERE i.source_id=? AND i.dir=? AND i.id<>? AND i.missing=0 AND i.hidden=0 AND i.kind IN (${kinds.map(() => '?').join(',')}) ORDER BY i.name LIMIT 60`, it.source_id, it.dir, id, ...kinds).map(card);
   });
   handle('items:setNote', (id, text) => { db.run('UPDATE items SET note=? WHERE id=?', text || null, id); db.refreshSearch(id); ctx.emit('items-changed', { ids: [id] }); return true; });
   handle('items:setCover', (id, dataUrl) => {
@@ -146,6 +148,18 @@ function register(ctx) {
     shell.showItemInFolder(p); return true;
   });
   handle('items:openDefault', async (id) => { const p = await ctx.materialize(id); const err = await shell.openPath(p); if (err) throw new Error(err); return true; });
+  // nascondi / mostra: un archivio nascosto nasconde anche tutto il suo contenuto
+  handle('items:setHidden', (ids, hidden) => {
+    const v = hidden ? 1 : 0;
+    db.tx(() => { for (const id of [].concat(ids)) { db.run('UPDATE items SET hidden=? WHERE id=? OR archive_id=?', v, id, id); } });
+    ctx.emit('items-changed', { ids: [].concat(ids) }); ctx.emit('sources-changed'); ctx.emit('tags-changed'); ctx.emit('collections-changed');
+    return true;
+  });
+  handle('items:setHiddenDir', ({ sourceId, dir }, hidden) => {
+    const r = db.run('UPDATE items SET hidden=? WHERE source_id=? AND (dir=? OR dir LIKE ?)', hidden ? 1 : 0, sourceId, dir, dir + '/%');
+    ctx.emit('items-changed', {}); ctx.emit('sources-changed'); ctx.emit('tags-changed'); ctx.emit('collections-changed');
+    return Number(r.changes);
+  });
   handle('items:purgeMissing', () => { const r = db.run('DELETE FROM items WHERE missing=1'); ctx.emit('items-changed', {}); return Number(r.changes); });
 
   // ---------- tag ----------
@@ -156,7 +170,7 @@ function register(ctx) {
     return Number(db.run('INSERT INTO tags(name) VALUES(?)', name).lastInsertRowid);
   };
   ctx.tagId = tagId;
-  handle('tags:list', () => db.all('SELECT t.*, (SELECT COUNT(*) FROM item_tags x JOIN items i ON i.id=x.item_id WHERE x.tag_id=t.id AND i.missing=0) count FROM tags t ORDER BY t.name COLLATE NOCASE'));
+  handle('tags:list', () => db.all('SELECT t.*, (SELECT COUNT(*) FROM item_tags x JOIN items i ON i.id=x.item_id WHERE x.tag_id=t.id AND i.missing=0 AND i.hidden=0) count FROM tags t ORDER BY t.name COLLATE NOCASE'));
   handle('tags:add', (ids, name) => {
     const tid = tagId(name);
     db.tx(() => { for (const id of ids) { db.run('INSERT OR IGNORE INTO item_tags(item_id,tag_id) VALUES(?,?)', id, tid); db.refreshSearch(id); } });
@@ -172,7 +186,7 @@ function register(ctx) {
   handle('tags:setColor', (tid, color) => { db.run('UPDATE tags SET color=? WHERE id=?', color, tid); ctx.emit('tags-changed'); return true; });
 
   // ---------- raccolte ----------
-  handle('collections:list', () => db.all('SELECT c.*, (SELECT COUNT(*) FROM collection_items x JOIN items i ON i.id=x.item_id WHERE x.collection_id=c.id AND i.missing=0) count FROM collections c ORDER BY c.name COLLATE NOCASE'));
+  handle('collections:list', () => db.all('SELECT c.*, (SELECT COUNT(*) FROM collection_items x JOIN items i ON i.id=x.item_id WHERE x.collection_id=c.id AND i.missing=0 AND i.hidden=0) count FROM collections c ORDER BY c.name COLLATE NOCASE'));
   handle('collections:create', (name) => { const r = db.run('INSERT INTO collections(name,created_at) VALUES(?,?)', String(name).trim() || 'Nuova raccolta', Date.now()); ctx.emit('collections-changed'); return { id: Number(r.lastInsertRowid) }; });
   handle('collections:rename', (id, name) => { db.run('UPDATE collections SET name=? WHERE id=?', name, id); ctx.emit('collections-changed'); return true; });
   handle('collections:delete', (id) => { db.run('DELETE FROM collections WHERE id=?', id); ctx.emit('collections-changed'); ctx.emit('items-changed', {}); return true; });

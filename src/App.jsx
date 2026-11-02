@@ -92,11 +92,13 @@ function Shell() {
   useEffect(() => { loadItems(false); }, [view, filters, dq, semantic]); // eslint-disable-line
   const endReached = useCallback(() => { if (!folders && items.length < total) loadItems(true); }, [folders, items.length, total, loadItems]);
 
+  // usa sempre la versione più recente di loadItems (evita di ricaricare la vista precedente)
+  const loadItemsRef = useRef(loadItems); loadItemsRef.current = loadItems;
   const reloadTimer = useRef(null);
   useEvent(['items-changed', 'sources-changed', 'tags-changed', 'collections-changed', 'queue-changed'], (_p, ch) => {
     clearTimeout(reloadTimer.current);
-    reloadTimer.current = setTimeout(() => { loadSide(); if (ch === 'items-changed' || ch === 'sources-changed' || ch === 'collections-changed' || ch === 'tags-changed') loadItems(false); }, 350);
-  }, [loadItems, loadSide]);
+    reloadTimer.current = setTimeout(() => { loadSide(); if (ch !== 'queue-changed') loadItemsRef.current(false); }, 350);
+  }, [loadSide]);
   useEvent(['scan-progress'], (p) => setStatus(s => ({ ...s, scan: p })));
   useEvent(['thumbs-progress'], (p) => setStatus(s => ({ ...s, thumbs: p })));
   useEvent(['ai-progress'], (p) => setStatus(s => ({ ...s, ai: p })));
@@ -113,12 +115,25 @@ function Shell() {
   };
   const openFolder = (f) => { if (view.type === 'folder') go({ ...view, dir: f.dir }); };
 
+  // ---------- nascondi ----------
+  const hideIds = async (ids, hidden) => {
+    await api.items.setHidden(ids, hidden).catch(ui.error);
+    setSelection(new Set(), null);
+    ui.toast(hidden ? `${ids.length === 1 ? 'Elemento nascosto' : `${ids.length} elementi nascosti`}. Li ritrovi in "Nascosti".` : 'Elementi di nuovo visibili', 'ok');
+  };
+  const folderMenu = (e, f) => ui.openMenu(e, [
+    { label: 'Apri', icon: '📂', onClick: () => openFolder(f) },
+    { label: 'Nascondi tutta la cartella', icon: '◌', onClick: async () => { const n = await api.items.setHiddenDir({ sourceId: view.sourceId, dir: f.dir }, true); ui.toast(`${n} file nascosti. Li ritrovi in "Nascosti".`, 'ok'); } },
+  ]);
+
   // ---------- menu contestuale ----------
   const cardMenu = (e, item) => {
     const ids = selection.has(item.id) ? [...selection] : [item.id];
     if (!selection.has(item.id)) selectItem(item);
     const installed = slicers.filter(s => s.installed);
     const inCol = view.type === 'library' && view.filter.collectionId;
+    const inHidden = view.type === 'library' && view.filter.hidden;
+    const hasArchive = ids.some(id => (items.find(x => x.id === id) || {}).kind === 'archive');
     ui.openMenu(e, [
       { label: 'Visualizza', icon: '◈', onClick: () => openItem(item), disabled: ids.length > 1 },
       ...(installed.length ? [{ header: 'Apri nello slicer' }, ...installed.slice(0, 8).map(s => ({ label: s.name + (s.preferred ? ' ★' : ''), onClick: () => api.slicers.open(s.id, ids).catch(ui.error) }))] : []),
@@ -127,6 +142,8 @@ function Shell() {
       { label: 'Aggiungi alla coda di stampa', icon: '☰', onClick: () => api.queue.add({ itemIds: ids }).then(() => ui.toast('Aggiunti alla coda', 'ok')) },
       { label: 'Genera tag con IA', icon: '✦', disabled: !aiConfigured, onClick: () => api.ai.tag(ids).then(() => ui.toast('Analisi IA avviata')) },
       { label: 'Rigenera miniatura', icon: '↻', onClick: () => api.thumbs.regenerate(ids) },
+      inHidden ? { label: 'Mostra di nuovo nella libreria', icon: '◉', onClick: () => hideIds(ids, false) }
+        : { label: hasArchive ? 'Nascondi (archivio e contenuto)' : 'Nascondi', icon: '◌', onClick: () => hideIds(ids, true) },
       collections.length ? { header: 'Aggiungi a raccolta' } : null,
       ...collections.slice(0, 10).map(c => ({ label: c.name, icon: '◆', onClick: () => api.collections.addItems(c.id, ids).then(() => ui.toast(`Aggiunti a "${c.name}"`, 'ok')) })),
       { label: 'Nuova raccolta con la selezione…', icon: '＋', onClick: async () => { const n = await ui.prompt('Nuova raccolta'); if (n) { const r = await api.collections.create(n); await api.collections.addItems(r.id, ids); } } },
@@ -144,6 +161,7 @@ function Shell() {
       if (typing) { if (e.key === 'Escape') e.target.blur(); return; }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); setSel(new Set(items.map(i => i.id))); }
       if (e.key === 'Escape') setSelection(new Set(), null);
+      if (e.key.toLowerCase() === 'h' && !e.metaKey && !e.ctrlKey && selection.size) hideIds([...selection], !(view.type === 'library' && view.filter.hidden));
       if ((e.key === ' ' || e.key === 'Enter') && detailId) { e.preventDefault(); openItem({ id: detailId }); }
       if (e.key === 'Backspace' && (e.metaKey || e.altKey)) back();
       if (['ArrowRight', 'ArrowLeft'].includes(e.key) && detailId) {
@@ -152,7 +170,7 @@ function Shell() {
       }
     };
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
-  }, [items, detailId, viewerItem, history]);
+  }, [items, detailId, viewerItem, history, selection, view]);
 
   // ---------- trascina cartelle dal sistema per aggiungerle ----------
   const onDragOver = (e) => { if (!window.__dragIds && e.dataTransfer.types.includes('Files')) { e.preventDefault(); setFileDrop(true); } };
@@ -200,6 +218,9 @@ function Shell() {
           <input type="range" min={120} max={320} value={cardSize} onChange={e => { setCardSize(+e.target.value); localStorage.setItem('cardSize', e.target.value); }} title="Dimensione miniature" style={{ width: 90 }} />
         </div>
         {selection.size > 1 && <div className="selection-bar"><b>{selection.size} selezionati</b><div className="spacer" />
+          {view.type === 'library' && view.filter.hidden
+            ? <button className="btn sm" onClick={() => hideIds([...selection], false)}>◉ Mostra di nuovo</button>
+            : <button className="btn sm" title="Nascondi dalla libreria (tasto H)" onClick={() => hideIds([...selection], true)}>◌ Nascondi</button>}
           <button className="btn sm" onClick={() => setSel(new Set(items.map(i => i.id)))}>Seleziona tutti ({items.length})</button>
           <button className="btn sm" onClick={() => setSelection(new Set(), null)}>Deseleziona</button></div>}
         <div className="content" style={{ '--card': `${cardSize}px` }}>
@@ -210,7 +231,7 @@ function Shell() {
             sources.length === 0 ? <div className="empty"><h2>Benvenuto in Reticolo</h2><p>Aggiungi le cartelle, i dischi o il NAS dove tieni i tuoi modelli 3D.<br />Reticolo li indicizza in locale: nessun caricamento online, nessun file spostato.</p>
               <button className="btn primary" onClick={() => api.sources.add().catch(ui.error)}>＋ Aggiungi una cartella</button><p className="small">Oppure trascina qui una cartella.</p></div>
               : <div className="empty">{dq ? `Nessun risultato per "${dq}"` : 'Nessun elemento qui.'}</div>
-          ) : <ItemGrid items={items} folders={folders} selection={selection} setSelection={setSelection} onOpen={openItem} onMenu={cardMenu} onEndReached={endReached} onOpenFolder={openFolder} />}
+          ) : <ItemGrid items={items} folders={folders} selection={selection} setSelection={setSelection} onOpen={openItem} onMenu={cardMenu} onEndReached={endReached} onOpenFolder={openFolder} onFolderMenu={view.type === 'folder' ? folderMenu : null} />}
           {!folders && items.length < total && <div className="loadmore">Caricamento…</div>}
         </div>
       </>

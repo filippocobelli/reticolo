@@ -53,9 +53,9 @@ export const Card = memo(function Card({ item, selected, onSelect, onOpen, onMen
   );
 });
 
-export function FolderCard({ folder, onOpen, isArchive }) {
+export function FolderCard({ folder, onOpen, isArchive, onMenu }) {
   return (
-    <div className="card folder" onDoubleClick={onOpen} onClick={onOpen} title={folder.name}>
+    <div className="card folder" onDoubleClick={onOpen} onClick={onOpen} onContextMenu={onMenu ? (e) => onMenu(e, folder) : undefined} title={folder.name}>
       <div className="thumb"><div className="ph folder">{isArchive ? '🗜️' : '📁'}</div></div>
       <div className="info"><div className="name">{folder.name}</div><div className="sub">{folder.count} elementi</div></div>
     </div>
@@ -63,7 +63,7 @@ export function FolderCard({ folder, onOpen, isArchive }) {
 }
 
 // Griglia con selezione multipla (clic, Cmd/Ctrl, Maiusc) e caricamento progressivo
-export function ItemGrid({ items, selection, setSelection, onOpen, onMenu, onEndReached, folders, onOpenFolder }) {
+export function ItemGrid({ items, selection, setSelection, onOpen, onMenu, onEndReached, folders, onOpenFolder, onFolderMenu }) {
   const lastRef = useRef(null);
   const sentinel = useRef(null);
   useEffect(() => {
@@ -87,7 +87,7 @@ export function ItemGrid({ items, selection, setSelection, onOpen, onMenu, onEnd
   return (
     <>
       <div className="grid" onClick={(e) => { if (e.target === e.currentTarget) setSelection(new Set(), null); }}>
-        {(folders || []).map(f => <FolderCard key={'f' + f.dir} folder={f} onOpen={() => onOpenFolder(f)} />)}
+        {(folders || []).map(f => <FolderCard key={'f' + f.dir} folder={f} onOpen={() => onOpenFolder(f)} onMenu={onFolderMenu} />)}
         {items.map(it => it.browseDir
           ? <ArchiveCard key={it.id} item={it} selected={selection.has(it.id)} onSelect={onSelect} onOpenFolder={onOpenFolder} onMenu={onMenu} dragIds={dragIds} />
           : <Card key={it.id} item={it} selected={selection.has(it.id)} onSelect={onSelect} onOpen={onOpen} onMenu={onMenu} dragIds={dragIds} />)}

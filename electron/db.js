@@ -46,6 +46,10 @@ class DB {
   constructor(file) {
     this.db = new DatabaseSync(file);
     this.db.exec(SCHEMA);
+    // migrazione: elementi nascosti dall'utente
+    const cols = this.db.prepare('PRAGMA table_info(items)').all().map(c => c.name);
+    if (!cols.includes('hidden')) this.db.exec('ALTER TABLE items ADD COLUMN hidden INTEGER DEFAULT 0');
+    this.db.exec('CREATE INDEX IF NOT EXISTS ix_items_hidden ON items(hidden)');
     this.cache = new Map();
   }
   stmt(sql) {

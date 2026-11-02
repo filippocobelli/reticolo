@@ -7,6 +7,7 @@ Gestore locale di librerie 3D per Mac (Apple Silicon) e Windows (x64). Indicizza
 - **Formati**: STL, 3MF, OBJ, FBX, STEP/STP, 3DM (anteprima parziale), GLB, PLY, glTF (solo ricerca), G-code/bgcode, Fusion F3D/F3Z, Lychee LYS (sperimentale), xTool XCS/XS, LightBurn, DXF, DWG (anteprima salvata), archivi ZIP/RAR/7Z/TAR/TGZ letti senza estrarli, più immagini, video, PDF, TXT e MD come file di accompagnamento.
 - **Visualizzatore 3D**: 7 viste, misure punto-punto, ingombro, wireframe, colori personalizzabili, screenshot PNG, piatti dei progetti Bambu/Orca, componenti degli assiemi STEP, anteprima del G-code per layer.
 - **Organizzazione**: filtri per formato, sorgente, cartella e tag; raccolte; vista "Senza raccolta". Note e tag restano legati al file anche se lo rinomini o lo sposti.
+- **Nascondi**: seleziona file, archivi o cartelle intere e toglili dalla libreria (tasto H o menu col tasto destro). Un archivio nascosto nasconde anche il suo contenuto; restano nascosti anche dopo le nuove scansioni e si ritrovano nella vista "Nascosti".
 - **Duplicati**: copie esatte, stessa geometria (anche se spostata o in un altro formato) e probabili duplicati da rivedere.
 - **Ricerca istantanea** per nome, percorso, tag, note e descrizione IA. Scorciatoia globale (predefinita ⌘/Ctrl+Maiusc+M).
 - **IA facoltativa**: tag e descrizioni con OpenRouter, OpenAI, Anthropic, Gemini, Ollama o Codex CLI; ricerca semantica con embeddings. Parte solo su tua richiesta.
