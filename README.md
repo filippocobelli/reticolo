@@ -193,7 +193,7 @@ npm run dist:win   # on Windows → release/Reticolo-win-x64.exe
 ### Automatic builds (GitHub Actions)
 The `.github/workflows/build.yml` workflow builds the `.dmg` and the `.exe`:
 - **manually**: Actions → Build → *Run workflow*. Installers are kept as artifacts for 3 days.
-- **with a version tag**: `git tag v0.2.0 && git push --tags` publishes a release with both installers.
+- **as a release**: Actions → Build → *Run workflow* with "Pubblica una release" ticked publishes release `v` + the version in `package.json`, with both installers (a `v*` tag push does the same).
 
 ## Project structure
 
