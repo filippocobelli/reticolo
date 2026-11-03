@@ -6,6 +6,7 @@ import { loadModel, analyze } from '../viewer/loaders.js';
 import { addLights, placeOnFloor, fitCamera, disposeObject, VIEWS } from '../viewer/scene.js';
 import { useUI, fmtDims, fmtNum } from './ui.jsx';
 import { SlicerButton } from './DetailPanel.jsx';
+import { themeColors, onThemeChange } from '../theme.js';
 
 const store = { get: (k, d) => { try { const v = localStorage.getItem('viewer.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set: (k, v) => { try { localStorage.setItem('viewer.' + k, JSON.stringify(v)); } catch {} } };
 
@@ -48,7 +49,7 @@ export default function Viewer({ item, onClose, slicers }) {
   const [measure, setMeasure] = useState(false);
   const [measures, setMeasures] = useState([]);
   const [labels, setLabels] = useState([]);
-  const [opts, setOpts] = useState(() => ({ color: store.get('color', '#b8c4d6'), bg: store.get('bg', '#1b1e25'), override: store.get('override', false), wire: false, grid: store.get('grid', true), bbox: false }));
+  const [opts, setOpts] = useState(() => ({ color: store.get('color', '#b8c4d6'), bg: store.get('bg', null), override: store.get('override', false), wire: false, grid: store.get('grid', true), bbox: false }));
   const optsRef = useRef(opts); optsRef.current = opts;
 
   // ---------- setup scena ----------
@@ -98,10 +99,11 @@ export default function Viewer({ item, onClose, slicers }) {
         // griglia e riquadro
         const span = Math.max(size.x, size.z) * 1.6 || 100;
         const step = span > 400 ? 50 : span > 100 ? 10 : span > 20 ? 5 : 1;
-        const grid = new THREE.GridHelper(Math.ceil(span / step) * step, Math.ceil(span / step), 0x3a404c, 0x262a33);
+        const tc = themeColors();
+        const grid = new THREE.GridHelper(Math.ceil(span / step) * step, Math.ceil(span / step), new THREE.Color(tc.grid1), new THREE.Color(tc.grid2));
         grid.position.y = box.min.y - 0.001;
-        const bbox = new THREE.Box3Helper(box, 0xff7a3d);
-        t.helpers = [grid, bbox]; t.grid = grid; t.bboxHelper = bbox;
+        const bbox = new THREE.Box3Helper(box, new THREE.Color(tc.accent));
+        t.helpers = [grid, bbox]; t.grid = grid; t.bboxHelper = bbox; t.gridArgs = [Math.ceil(span / step) * step, Math.ceil(span / step)]; t.gridTheme = tc.mode;
         t.scene.add(grid, bbox);
         applyOpts(optsRef.current);
         fitCamera(t.camera, box, plate == null || !t.fitted ? 'iso' : 'iso', t.controls);
@@ -116,7 +118,14 @@ export default function Viewer({ item, onClose, slicers }) {
   // ---------- opzioni di visualizzazione ----------
   function applyOpts(o) {
     const t = T.current; if (!t.renderer) return;
-    t.scene.background = new THREE.Color(o.bg);
+    const tc = themeColors();
+    t.scene.background = new THREE.Color(o.bg || tc.viewerBg);
+    if (t.grid && t.gridTheme !== tc.mode) { // ricrea la griglia con i colori del tema
+      const g = new THREE.GridHelper(t.gridArgs[0], t.gridArgs[1], new THREE.Color(tc.grid1), new THREE.Color(tc.grid2));
+      g.position.copy(t.grid.position); t.scene.remove(t.grid); t.grid.geometry.dispose(); t.grid.material.dispose();
+      t.helpers = t.helpers.map(h => h === t.grid ? g : h); t.grid = g; t.scene.add(g); t.gridTheme = tc.mode;
+    }
+    if (t.bboxHelper) t.bboxHelper.material.color.set(tc.accent);
     if (t.grid) t.grid.visible = o.grid;
     if (t.bboxHelper) t.bboxHelper.visible = o.bbox;
     if (t.model) t.model.traverse(m => {
@@ -131,7 +140,8 @@ export default function Viewer({ item, onClose, slicers }) {
       }
     });
   }
-  useEffect(() => { applyOpts(opts); store.set('color', opts.color); store.set('bg', opts.bg); store.set('override', opts.override); store.set('grid', opts.grid); }, [opts]);
+  useEffect(() => { applyOpts(opts); store.set('color', opts.color); if (opts.bg) store.set('bg', opts.bg); else { try { localStorage.removeItem('viewer.bg'); } catch {} } store.set('override', opts.override); store.set('grid', opts.grid); }, [opts]);
+  useEffect(() => onThemeChange(() => applyOpts(optsRef.current)), []);
   useEffect(() => { if (gcode && gcode.setLayerRange) gcode.setLayerRange(layer[0], layer[1]); }, [layer, gcode]);
 
   // ---------- misure ----------
@@ -154,11 +164,11 @@ export default function Viewer({ item, onClose, slicers }) {
       const hit = ray.intersectObject(t.model, true).find(h => h.object.isMesh && h.object.visible);
       if (!hit) return;
       const s = Math.max(t.box.getSize(new THREE.Vector3()).length() / 250, 0.05);
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(s, 12, 8), new THREE.MeshBasicMaterial({ color: 0xff7a3d, depthTest: false }));
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(s, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(themeColors().accent), depthTest: false }));
       dot.renderOrder = 999; dot.position.copy(hit.point); t.measureGroup.add(dot);
       if (!t.pending) { t.pending = hit.point.clone(); return; }
       const a = t.pending, b = hit.point.clone(); t.pending = null;
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: 0xff7a3d, depthTest: false }));
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: new THREE.Color(themeColors().accent), depthTest: false }));
       line.renderOrder = 999; t.measureGroup.add(line);
       const d = a.distanceTo(b);
       const m = { d, dx: Math.abs(b.x - a.x), dy: Math.abs(b.z - a.z), dz: Math.abs(b.y - a.y), mid: a.clone().add(b).multiplyScalar(0.5) };
@@ -237,7 +247,8 @@ export default function Viewer({ item, onClose, slicers }) {
         {tree && <section><h3>Componenti dell'assieme</h3><div className="tree"><TreeNode node={tree} onToggle={() => {}} onFocus={focusObj} /></div></section>}
         {!isFile && <section><h3>Aspetto</h3>
           <div className="row" style={{ marginBottom: 8 }}><input type="color" value={opts.color} onChange={e => setOpts({ ...opts, color: e.target.value, override: true })} /> Colore modello</div>
-          <div className="row" style={{ marginBottom: 8 }}><input type="color" value={opts.bg} onChange={e => setOpts({ ...opts, bg: e.target.value })} /> Sfondo</div>
+          <div className="row" style={{ marginBottom: 8 }}><input type="color" value={opts.bg || themeColors().viewerBg} onChange={e => setOpts({ ...opts, bg: e.target.value })} /> Sfondo
+            {opts.bg && <button className="btn sm ghost" title="Usa lo sfondo del tema" onClick={() => setOpts({ ...opts, bg: null })}>Tema</button>}</div>
           <label className="check"><input type="checkbox" checked={!opts.override} onChange={e => setOpts({ ...opts, override: !e.target.checked })} /> Usa i colori del file</label>
           <label className="check"><input type="checkbox" checked={opts.grid} onChange={e => setOpts({ ...opts, grid: e.target.checked })} /> Griglia</label>
         </section>}

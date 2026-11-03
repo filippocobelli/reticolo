@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from '../api.js';
+import { api, KOFI_URL } from '../api.js';
 import { useUI, Logo } from './ui.jsx';
 
 const TAG_COLORS = ['#ff7a3d', '#f3c04c', '#3ccf8e', '#4fd1c5', '#5aa9ff', '#c38bff', '#ff5d9e', '#9aa3b2'];
@@ -108,6 +108,7 @@ export default function Sidebar({ view, go, facets, sources, tags, collections, 
           <Item icon="⚙" label="Impostazioni" active={is('settings')} onClick={() => go({ type: 'settings' })} />
         </div>
       </nav>
+      <a className="kofi" href={KOFI_URL} target="_blank" rel="noreferrer" title="Reticolo è gratuito: se ti è utile puoi offrirmi un caffè">☕ <span>Reticolo è gratuito · <b>Sostienilo su Ko-fi</b></span></a>
       <div className="status">{status}</div>
     </aside>
   );

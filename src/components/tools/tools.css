@@ -5,12 +5,12 @@
 .tool-params h4 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
 .tool-preview { position: relative; min-height: 360px; }
 .mesh-preview { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; }
-.tool-preview .preview-info { position: absolute; left: 10px; bottom: 10px; font-size: 12px; background: rgba(0,0,0,.45); padding: 4px 8px; border-radius: 6px; pointer-events: none; }
-.tool-warn { color: #f0b45a; font-size: 12px; margin: 6px 0; }
-.tool-ok { color: #6fd28a; font-size: 12px; margin: 6px 0; word-break: break-all; }
-.swatch { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(255,255,255,.25); vertical-align: middle; margin-right: 4px; }
+.tool-preview .preview-info { position: absolute; left: 10px; bottom: 10px; font-size: 12px; background: var(--glass); color: var(--fg); border: 1px solid var(--line); padding: 4px 8px; border-radius: 6px; pointer-events: none; }
+.tool-warn { color: var(--warn); font-size: 12px; margin: 6px 0; }
+.tool-ok { color: var(--ok); font-size: 12px; margin: 6px 0; word-break: break-all; }
+.swatch { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--line2); vertical-align: middle; margin-right: 4px; }
 .conv-targets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.conv-targets label { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; cursor: pointer; }
-.conv-targets label.on { border-color: var(--accent, #5b9cff); background: rgba(91,156,255,.1); }
+.conv-targets label { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line2); border-radius: 8px; cursor: pointer; }
+.conv-targets label.on { border-color: var(--accent); background: var(--accent-bg); }
 .conv-plates { font-size: 13px; margin: 6px 0; padding-left: 18px; }
 .tool-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

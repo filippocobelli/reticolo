@@ -3,7 +3,7 @@
 const inv = (ch) => (...a) => window.rtc.invoke(ch, ...a);
 
 export const api = {
-  app: { info: inv('app:info'), setShortcut: inv('app:setShortcut') },
+  app: { info: inv('app:info'), setShortcut: inv('app:setShortcut'), setTheme: inv('app:setTheme'), openExternal: inv('app:openExternal') },
 
   // ---- library.js ----
   sources: {
@@ -94,6 +94,10 @@ export const api = {
     revealPath: inv('tools:revealPath'),         // (path)
   },
 };
+
+export const KOFI_URL = 'https://ko-fi.com/filippocobelli';
+export const REPO_URL = 'https://github.com/filippocobelli/reticolo';
+export const SITE_URL = 'https://lab.cobelli.uk/reticolo/';
 
 export const startDrag = (ids) => window.rtc.startDrag(ids);
 export const onEvent = (fn) => window.rtc.on(fn);

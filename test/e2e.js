@@ -128,6 +128,17 @@ module.exports = async function (ctx, app) {
     await click('Vasi', '.nav-item'); await sleep(2000); await shot('12-vasi');
     await click('Convertitore 3MF'); await shot('13-convertitore');
     await click('Impostazioni'); await sleep(1000); await shot('14-impostazioni');
+    // temi
+    const theme = async (mode, accent) => { await js(`localStorage.setItem('theme', JSON.stringify({ mode: '${mode}', accent: '${accent}' })); location.reload()`).catch(() => {}); await sleep(1800); };
+    await theme('light', '#4c8dff'); await click('Tutti i modelli'); await sleep(600);
+    const bg = await js(`getComputedStyle(document.documentElement).backgroundColor + '|' + getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()`);
+    ok(bg.startsWith('rgb(244, 244, 241)') && bg.endsWith('#4c8dff'), 'tema chiaro con accento blu applicato', bg);
+    await js(`[...document.querySelectorAll('.card')].find(e => e.textContent.includes('portachiavi')).click()`); await shot('15-chiaro-libreria');
+    await dbl('portachiavi'); await sleep(2500); await shot('16-chiaro-viewer'); await click('← Indietro');
+    await click('Impostazioni'); await sleep(800); await shot('17-chiaro-impostazioni');
+    await theme('dark', '#2fbf71'); await click('Tutti i modelli'); await sleep(600); await shot('18-scuro-verde');
+    await theme('light', '#f2c400'); await click('Targhette'); await sleep(2500); await shot('19-chiaro-giallo-targhette');
+    await theme('dark', '#ff7a3d');
   } catch (e) { ok(false, 'eccezione: ' + (e.stack || e)); }
   fs.writeFileSync(path.join(SHOTS, 'results.txt'), results.join('\n') + `\n\n${failed} falliti\n`);
   console.log('\n' + results.join('\n') + `\n\nRISULTATO: ${failed} falliti\n`);

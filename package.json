@@ -1,7 +1,7 @@
 {
   "name": "reticolo",
   "productName": "Reticolo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Gestore locale di librerie 3D per stampa 3D, laser e CNC",
   "main": "electron/main.js",
   "author": "Filippo Cobelli",
@@ -85,7 +85,7 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "${productName}-${os}-${arch}.${ext}",
     "fileAssociations": [
       {
         "ext": [
@@ -100,5 +100,10 @@
         "role": "Viewer"
       }
     ]
+  },
+  "homepage": "https://lab.cobelli.uk/reticolo/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/filippocobelli/reticolo.git"
   }
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../api.js';
+import { api, KOFI_URL, REPO_URL, SITE_URL } from '../api.js';
+import { ACCENTS, MODES, loadTheme, applyTheme } from '../theme.js';
 import { useUI, useEvent, fmtDate, fmtSize } from './ui.jsx';
 import AISettings from './AISettings.jsx';
 import SlicerSettings from './SlicerSettings.jsx';
@@ -85,6 +86,46 @@ function Backup() {
   );
 }
 
+function Appearance() {
+  const [t, setT] = useState(loadTheme);
+  const set = (patch) => { const n = { ...t, ...patch }; setT(n); applyTheme(n, { persist: true }); };
+  const custom = !ACCENTS.some(a => a.hex.toLowerCase() === String(t.accent).toLowerCase());
+  return (
+    <div className="panel">
+      <h2>Aspetto</h2>
+      <div className="field"><label>Tema</label>
+        <div className="seg">{MODES.map(m => <button key={m.id} className={t.mode === m.id ? 'on' : ''} onClick={() => set({ mode: m.id })}>{m.label}</button>)}</div>
+        <div className="hint">"Automatico" segue l'aspetto chiaro/scuro del sistema.</div>
+      </div>
+      <div className="field"><label>Colore d'accento</label>
+        <div className="swatches">
+          {ACCENTS.map(a => <button key={a.id} className={`swatch-btn ${String(t.accent).toLowerCase() === a.hex ? 'on' : ''}`} style={{ background: a.hex }} title={a.label} aria-label={a.label} onClick={() => set({ accent: a.hex })} />)}
+          <label className="row" style={{ gap: 6, marginLeft: 6 }} title="Colore personalizzato">
+            <input type="color" value={t.accent} onChange={e => set({ accent: e.target.value })} />
+            <span className={custom ? '' : 'muted'}>Personalizzato</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function About({ info }) {
+  return (
+    <div className="panel">
+      <h2>Informazioni</h2>
+      <p style={{ marginTop: 0 }}>Reticolo è <b>gratuito</b>. Se ti è utile e vuoi sostenerne lo sviluppo, puoi offrirmi un caffè su Ko-fi.</p>
+      <div className="row" style={{ marginBottom: 12 }}>
+        <a className="kofi-btn" href={KOFI_URL} target="_blank" rel="noreferrer">☕ Sostieni su Ko-fi</a>
+        <a className="btn" href={SITE_URL} target="_blank" rel="noreferrer">Sito</a>
+        <a className="btn" href={REPO_URL} target="_blank" rel="noreferrer">Codice su GitHub</a>
+        <a className="btn" href={REPO_URL + '/releases/latest'} target="_blank" rel="noreferrer">Aggiornamenti</a>
+      </div>
+      <p className="small muted" style={{ margin: 0 }}>Idea e test di Filippo Cobelli; il codice è scritto con l'intelligenza artificiale (Claude).{info ? ` Versione ${info.version}.` : ''}</p>
+    </div>
+  );
+}
+
 export default function SettingsView() {
   const ui = useUI();
   const [st, setSt] = useState(null);
@@ -95,6 +136,7 @@ export default function SettingsView() {
   return (
     <div className="content"><div className="settings-grid">
       <h1>Impostazioni</h1>
+      <Appearance />
       <div className="panel">
         <h2>Generale</h2>
         <div className="field"><label>Scorciatoia globale per portare Reticolo in primo piano</label>
@@ -111,6 +153,7 @@ export default function SettingsView() {
       <SlicerSettings />
       <AISettings />
       <Backup />
+      <About info={info} />
       {info && <div className="small muted">Reticolo {info.version} · {info.platform} · dati in <span className="mono">{info.userData}</span></div>}
     </div></div>
   );

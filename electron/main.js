@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, globalShortcut, shell, nativeImage, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, globalShortcut, shell, nativeImage, Menu, nativeTheme } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { DB } = require('./db');
@@ -67,7 +67,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440, height: 900, minWidth: 960, minHeight: 600,
     title: 'Reticolo',
-    backgroundColor: '#14161a',
+    backgroundColor: (ctx.db && ctx.db.getSetting('themeResolved', 'dark') === 'light') ? '#f4f4f1' : '#121418',
     show: !isTest || process.env.RETICOLO_SHOW === '1',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: false, plugins: true },
@@ -144,11 +144,18 @@ app.whenReady().then(async () => {
   ctx.db = new DB(path.join(ud, 'library.db'));
 
   registerProtocol();
+  nativeTheme.themeSource = ctx.db.getSetting('theme', 'dark');
   for (const m of MODULES) {
     try { require(`./${m}`).register(ctx); }
     catch (e) { console.error(`Modulo ${m} non caricato:`, e); }
   }
   handle('app:info', () => ({ version: app.getVersion(), platform: process.platform, userData: ud }));
+  handle('app:setTheme', (mode, resolved) => {
+    nativeTheme.themeSource = ['light', 'dark', 'system'].includes(mode) ? mode : 'dark';
+    ctx.db.setSetting('theme', mode); ctx.db.setSetting('themeResolved', resolved || 'dark');
+    return true;
+  });
+  handle('app:openExternal', (url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return true; });
   handle('app:setShortcut', (acc) => { ctx.db.setSetting('globalShortcut', acc); registerShortcut(); return true; });
 
   if (process.platform === 'darwin') Menu.setApplicationMenu(Menu.buildFromTemplate([

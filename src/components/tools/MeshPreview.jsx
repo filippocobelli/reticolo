@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { themeColors, onThemeChange } from '../../theme.js';
 
 export default function MeshPreview({ parts, frameKey }) {
   const host = useRef(null);
@@ -13,7 +14,8 @@ export default function MeshPreview({ parts, frameKey }) {
     renderer.setPixelRatio(window.devicePixelRatio || 1);
     el.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#1b1e24');
+    const tc = themeColors();
+    scene.background = new THREE.Color(tc.viewerBg || '#1b1e24');
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 5000);
     camera.up.set(0, 0, 1);
     camera.position.set(120, -160, 120);
@@ -23,9 +25,17 @@ export default function MeshPreview({ parts, frameKey }) {
     const dir = new THREE.DirectionalLight(0xffffff, 1.6);
     dir.position.set(80, -120, 200);
     scene.add(dir);
-    const grid = new THREE.GridHelper(300, 30, 0x3a4050, 0x2a2f38);
-    grid.rotation.x = Math.PI / 2;
-    scene.add(grid);
+    let grid = null;
+    const makeGrid = () => {
+      const c = themeColors();
+      if (grid) { scene.remove(grid); grid.geometry.dispose(); grid.material.dispose(); }
+      grid = new THREE.GridHelper(300, 30, new THREE.Color(c.grid1 || '#3a4050'), new THREE.Color(c.grid2 || '#2a2f38'));
+      grid.rotation.x = Math.PI / 2;
+      scene.add(grid);
+      scene.background = new THREE.Color(c.viewerBg || '#1b1e24');
+    };
+    makeGrid();
+    const offTheme = onThemeChange(makeGrid);
     const group = new THREE.Group();
     scene.add(group);
 
@@ -45,6 +55,7 @@ export default function MeshPreview({ parts, frameKey }) {
     loop();
     st.current = { renderer, scene, camera, controls, group };
     return () => {
+      offTheme();
       cancelAnimationFrame(raf);
       ro.disconnect();
       controls.dispose();

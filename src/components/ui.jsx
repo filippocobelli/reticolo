@@ -93,8 +93,8 @@ export const FORMAT_COLORS = { stl: '#5aa9ff', '3mf': '#3ccf8e', obj: '#c38bff',
 export function Logo({ size = 22 }) {
   return (
     <svg className="logo" width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 2 21 7v10l-9 5-9-5V7l9-5Z" stroke="#ff7a3d" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M3 7l9 5 9-5M12 12v10M7.5 4.5l9 5M16.5 4.5l-9 5" stroke="#ff9a66" strokeWidth="1" opacity=".7" />
+      <path d="M12 2 21 7v10l-9 5-9-5V7l9-5Z" stroke="var(--accent)" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M3 7l9 5 9-5M12 12v10M7.5 4.5l9 5M16.5 4.5l-9 5" stroke="var(--accent2)" strokeWidth="1" opacity=".7" />
     </svg>
   );
 }
