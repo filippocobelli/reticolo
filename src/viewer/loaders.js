@@ -117,7 +117,11 @@ async function load3mf(item, buf, opts) {
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
         const vc = o.vertexColors || o.colors;
-        if (vc && vc.length === pos.length) { g.setAttribute('color', new THREE.BufferAttribute(vc instanceof Float32Array ? vc : new Float32Array(vc), 3)); }
+        if (vc && vc.length === pos.length) {
+          const lin = new Float32Array(vc.length);
+          for (let i = 0; i < vc.length; i++) { const c = vc[i]; lin[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+          g.setAttribute('color', new THREE.BufferAttribute(lin, 3));
+        }
         g.computeVertexNormals();
         const mat = defaultMaterial(o.color || undefined);
         if (g.getAttribute('color')) { mat.vertexColors = true; mat.color.set('#ffffff'); }

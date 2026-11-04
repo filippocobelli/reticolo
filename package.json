@@ -1,7 +1,7 @@
 {
   "name": "reticolo",
   "productName": "Reticolo",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Gestore locale di librerie 3D per stampa 3D, laser e CNC",
   "main": "electron/main.js",
   "author": "Filippo Cobelli",

@@ -218,7 +218,7 @@ src/                 user interface (React + Vite)
   worker.js          hidden window that renders thumbnails
   theme.js           light/dark theme and accent colours
 test/                module tests and end-to-end test
-docs/                project website (lab.cobelli.uk/reticolo)
+docs/img/            README images (the website lives in filippocobelli.github.io/reticolo)
 ```
 
 The end-to-end test (`npm run test:e2e`) builds a sample library with all the main formats, launches the real app and checks scanning, thumbnails, duplicates, search, hidden items, the queue, backup, 3MF conversion and themes.

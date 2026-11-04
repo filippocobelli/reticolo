@@ -49,7 +49,7 @@ export default function Viewer({ item, onClose, slicers }) {
   const [measure, setMeasure] = useState(false);
   const [measures, setMeasures] = useState([]);
   const [labels, setLabels] = useState([]);
-  const [opts, setOpts] = useState(() => ({ color: store.get('color', '#b8c4d6'), bg: store.get('bg', null), override: store.get('override', false), wire: false, grid: store.get('grid', true), bbox: false }));
+  const [opts, setOpts] = useState(() => ({ color: store.get('color', '#b8c4d6'), bg: store.get('bg', null), override: false, wire: false, grid: store.get('grid', true), bbox: false }));
   const optsRef = useRef(opts); optsRef.current = opts;
 
   // ---------- setup scena ----------
@@ -133,14 +133,14 @@ export default function Viewer({ item, onClose, slicers }) {
       const mats = Array.isArray(m.material) ? m.material : [m.material];
       for (const mat of mats) {
         if (mat.userData.orig == null) mat.userData.orig = { color: mat.color ? mat.color.getHex() : null, vc: mat.vertexColors };
-        const hasOwn = mat.userData.orig.vc || m.userData.hasOwnColor || ['step', 'stp', 'glb', 'fbx', '3dm', 'obj'].includes(item.ext);
+        const hasOwn = mat.userData.orig.vc || m.userData.hasOwnColor || ['step', 'stp', 'glb', 'fbx', '3dm', 'obj', '3mf'].includes(item.ext);
         if (o.override || !hasOwn) { mat.color && mat.color.set(o.color); mat.vertexColors = false; }
         else { if (mat.userData.orig.color != null) mat.color.setHex(mat.userData.orig.color); mat.vertexColors = mat.userData.orig.vc; }
         mat.wireframe = o.wire; mat.needsUpdate = true;
       }
     });
   }
-  useEffect(() => { applyOpts(opts); store.set('color', opts.color); if (opts.bg) store.set('bg', opts.bg); else { try { localStorage.removeItem('viewer.bg'); } catch {} } store.set('override', opts.override); store.set('grid', opts.grid); }, [opts]);
+  useEffect(() => { applyOpts(opts); store.set('color', opts.color); if (opts.bg) store.set('bg', opts.bg); else { try { localStorage.removeItem('viewer.bg'); } catch {} } store.set('grid', opts.grid); }, [opts]);
   useEffect(() => onThemeChange(() => applyOpts(optsRef.current)), []);
   useEffect(() => { if (gcode && gcode.setLayerRange) gcode.setLayerRange(layer[0], layer[1]); }, [layer, gcode]);
 

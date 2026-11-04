@@ -29,6 +29,7 @@ module.exports = async function (ctx, app) {
     for (const n of ['cubo_calibrazione.stl', 'vaso_cilindro.stl', 'supporto_cuffie.obj', 'portachiavi_bambu.3mf', 'anello.gcode', 'sottobicchiere.lbrn2', 'mandala.dxf', 'torre.stl', 'foto_vaso.png'])
       ok(by(n) && by(n).thumb === 1, `miniatura ${n}`, by(n) && by(n).thumb);
     ok(by('torre.stl') && by('torre.stl').archive_id, 'voce in archivio indicizzata');
+    ok(by('cubo_dipinto.3mf') && by('cubo_dipinto.3mf').thumb === 1, '3MF Bambu dipinto: miniatura generata');
     ok(by('staffa.step') && by('staffa.step').thumb === 1 && JSON.parse(by('staffa.step').dims || '[]').join(',') === '40,30,10', 'STEP: miniatura e dimensioni', by('staffa.step') && [by('staffa.step').thumb, by('staffa.step').dims, by('staffa.step').meta]);
     const in7z = all.filter(i => i.archive_id === by('ricambi.7z').id);
     ok(in7z.length === 2 && in7z.every(i => i.thumb === 1), 'archivio 7z indicizzato con miniature', in7z.map(i => [i.name, i.thumb]));
@@ -119,6 +120,7 @@ module.exports = async function (ctx, app) {
     await click('← Indietro'); await dbl('mandala'); await sleep(2000); await shot('06-viewer-dxf');
     await click('← Indietro'); await dbl('supporto_cuffie'); await sleep(2000);
     await click('📏 Misura'); await shot('07-viewer-obj');
+    await click('← Indietro'); await dbl('cubo_dipinto'); await sleep(2500); await shot('07c-viewer-3mf-dipinto');
     await click('← Indietro'); await dbl('staffa'); await sleep(3000); await shot('07b-viewer-step');
     await click('← Indietro');
     await click(path.basename(LIB)); await sleep(800); await shot('08-cartelle');

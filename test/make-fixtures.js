@@ -82,6 +82,7 @@ function make(root) {
   })));
   // STEP (generato da script Python) e archivio 7z
   require('node:child_process').spawnSync('python3', [path.join(__dirname, 'make-step.py'), d('Progetti/staffa.step')]);
+  require('node:child_process').spawnSync('python3', [path.join(__dirname, 'make-bambu-painted.py'), d('Progetti/cubo_dipinto.3mf')]);
   const za = require('7zip-bin').path7za;
   try { fs.chmodSync(za, 0o755); } catch {}
   require('node:child_process').spawnSync(za, ['a', '-bd', '-bso0', d('Pacchetti/ricambi.7z'), path.join(root, 'Vasi/foto_vaso.png'), path.join(root, 'Varie/supporto_cuffie.obj')]);
