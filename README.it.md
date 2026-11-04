@@ -216,7 +216,7 @@ src/                 interfaccia (React + Vite)
   worker.js          finestra nascosta che genera le miniature
   theme.js           tema chiaro/scuro e colori d'accento
 test/                test dei moduli e test end-to-end
-docs/img/            immagini del README (il sito è in filippocobelli.github.io/reticolo)
+docs/                sito del progetto (lab.cobelli.uk/reticolo) e immagini del README
 ```
 
 Il test end-to-end (`npm run test:e2e`) crea una libreria di prova con tutti i formati principali, avvia l'app vera e verifica scansione, miniature, duplicati, ricerca, elementi nascosti, coda, backup, conversione 3MF e temi.
